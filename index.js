@@ -8,7 +8,7 @@ const Excercise = require("./modules/exercise");
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-});
+}).then(res => console.log("Connected to DB"))
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -39,7 +39,7 @@ app.post("/api/users/:id/exercises", (req, res) => {
   const id = req.params.id;
   const description = req.body.description;
   const duration = req.body.duration;
-  const date = new Date(req.body.date) || new Date();
+  const date = new Date(req.body.date).toDateString() || new Date().toDateString();
   const newExo = new Excercise({
     userID: id,
     description: description,
@@ -58,11 +58,33 @@ app.post("/api/users/:id/exercises", (req, res) => {
           _id: _id,
           description: description,
           duration: duration,
-          date: date.toDateString(),
+          date: date,
         });
       });
   });
 });
+
+
+
+app.get("/api/users/:id/logs",(req, res) => {
+  const id = req.params.id
+  console.log(id)
+  User.findById(id).select({ username: 1}).then((userRes) => {
+    const username = userRes.username
+    Excercise.find({userID:id}).select({_id:0,description:1,duration:1,date:1}).then((excercises) => {
+      res.json(
+        {
+          username: username,
+          count:[...excercises].length,
+          _id: id,
+          log: excercises
+        }
+        
+      )
+    })
+  })
+
+})
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log("Your app is listening on port " + listener.address().port);
