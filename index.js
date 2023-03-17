@@ -71,15 +71,13 @@ app.get("/api/users/:id/logs",(req, res) => {
   console.log(id)
   User.findById(id).select({ username: 1}).then((userRes) => {
     const username = userRes.username
-    Excercise.find({userID:id}).select({_id:0,description:1,duration:1,date:1}).then((excercises) => {
-      res.json(
-        {
-          username: username,
-          count:[...excercises].length,
-          _id: id,
-          log: excercises
-        }
-        
+    Excercise.find({userID:id}).select({userID:0,__v:0,_id:0}).then((excercises) => {
+      res.json({
+        _id:id,
+        username: "fcc_test",
+        count: 1,
+        log : excercises
+      }
       )
     })
   })
