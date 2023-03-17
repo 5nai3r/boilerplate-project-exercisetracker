@@ -38,7 +38,7 @@ app.get("/api/users", (req, res) => {
 app.post("/api/users/:id/exercises", (req, res) => {
   const id = req.params.id;
   const description = req.body.description;
-  const duration = req.body.duration;
+  const duration = parseInt(  req.body.duration);
   const date = new Date(req.body.date).toDateString() || new Date().toDateString();
   const newExo = new Excercise({
     userID: id,
@@ -55,10 +55,10 @@ app.post("/api/users/:id/exercises", (req, res) => {
         _id = userRes._id;
         res.json({
           username: username,
-          _id: _id,
           description: description,
           duration: duration,
           date: date,
+          _id: _id,
         });
       });
   });
@@ -68,18 +68,23 @@ app.post("/api/users/:id/exercises", (req, res) => {
 
 app.get("/api/users/:id/logs",(req, res) => {
   const id = req.params.id
-  console.log(id)
+  const filterFrom = req.query.from ? new Date(req.query.from) : null
+  const filterTo = req.query.to ? new Date(req.query.to)  : null
+  const filterLimit =  req.query.limit
+
+  console.log(filterFrom,filterTo,filterLimit)
   User.findById(id).select({ username: 1}).then((userRes) => {
     const username = userRes.username
-    Excercise.find({userID:id}).select({userID:0,__v:0,_id:0}).then((excercises) => {
+    getExercises(id,filterFrom,filterTo,filterLimit).then((results) => {
       res.json({
         _id:id,
-        username: "fcc_test",
-        count: 1,
-        log : excercises
+        username: username,
+        count: [...results].length,
+        log : results
       }
       )
-    })
+    }
+    )
   })
 
 })
@@ -87,3 +92,31 @@ app.get("/api/users/:id/logs",(req, res) => {
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log("Your app is listening on port " + listener.address().port);
 });
+
+
+async function getExercises(userID, dateA = null, dateB = null, limit = null) {
+  try {
+    const query = {
+      userID: userID
+    };
+    
+    if (dateA && dateB) {
+      query.date = { $gte: dateA, $lte: dateB };
+    } else if (dateA) {
+      query.date = { $gte: dateA };
+    } else if (dateB) {
+      query.date = { $lte: dateB };
+    }
+
+    const exercisesQuery = Excercise.find(query).select({_id:0,__v:0,userID:0});
+    if (limit) {
+      exercisesQuery.limit(limit);
+    }
+
+    const exercises = await exercisesQuery.exec();
+    return exercises;
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+}
