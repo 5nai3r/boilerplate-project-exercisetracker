@@ -39,13 +39,14 @@ app.post("/api/users/:id/exercises", (req, res) => {
   const id = req.params.id;
   const description = req.body.description;
   const duration = parseInt(  req.body.duration);
-  const date = new Date(req.body.date).toDateString() || new Date().toDateString();
+  const date = req.body.date ? new Date(req.body.date).toDateString() : new Date().toDateString();
   const newExo = new Excercise({
     userID: id,
     description: description,
     duration: duration,
     date: date,
   });
+ 
 
   newExo.save().then((response) => {
     User.findById(id)
